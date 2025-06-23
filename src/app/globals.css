@@ -1,26 +1,27 @@
 @import "tailwindcss";
 
+/* Base variables can go outside @layer */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary-50: rgb(239 246 255);
+  /* ...etc */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Component styles inside @layer */
+@layer components {
+  .component-item {
+    @apply flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-grab transition-all duration-200 hover:border-gray-300 hover:shadow-sm;
   }
+  /* other classes ... */
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Media queries, keyframes, and animations outside @layer components */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .form-builder-sidebar {
+    @apply w-full;
+  }
 }
