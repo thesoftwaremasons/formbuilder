@@ -1,212 +1,168 @@
-'use client';
-
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { FormElement } from '@/lib/types';
-import { Upload, File, X, Check } from 'lucide-react';
+import { Upload, X, Check } from 'lucide-react';
 
-interface FileUploadProps {
+export interface FileUploadProps {
   element: FormElement;
-  onChange: (value: FileList | null) => void;
+  onChange: (value: any) => void;
   isPreview?: boolean;
-  value?: FileList | null;
+  value?: any;
 }
 
-export function FileUpload({ element, onChange, isPreview = false, value = null }: FileUploadProps) {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>(value ? Array.from(value) : []);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [error, setError] = useState<string>('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export const FileUpload: React.FC<FileUploadProps> = ({
+  element,
+  onChange,
+  isPreview = false,
+  value = null
+}) => {
+  const [dragOver, setDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileSelect = (files: FileList | null) => {
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files);
-    
-    // Validate file types if specified
-    const allowedTypes = element.properties?.allowedTypes as string[] || [];
-    if (allowedTypes.length > 0) {
-      const invalidFiles = fileArray.filter(file => {
-        const extension = file.name.split('.').pop()?.toLowerCase();
-        return !allowedTypes.includes(`.${extension}`);
-      });
-      
-      if (invalidFiles.length > 0) {
-        setError(`Invalid file type. Allowed types: ${allowedTypes.join(', ')}`);
-        return;
-      }
-    }
+    const allowMultiple = element.properties?.allowMultiple || false;
+    const maxFiles = element.properties?.maxFiles || 5;
+    const maxSize = element.properties?.maxSize || 5 * 1024 * 1024; // 5MB default
+    const acceptedTypes = element.properties?.acceptedFileTypes || [];
 
-    // Validate file size if specified
-    const maxSize = element.properties?.maxSize as number || 10 * 1024 * 1024; // 10MB default
-    const oversizedFiles = fileArray.filter(file => file.size > maxSize);
-    if (oversizedFiles.length > 0) {
-      setError(`File too large. Maximum size: ${formatFileSize(maxSize)}`);
+    // Validate file count
+    if (!allowMultiple && fileArray.length > 1) {
+      setError('Only one file is allowed');
       return;
     }
 
-    // Handle multiple files
-    const allowMultiple = element.properties?.allowMultiple as boolean || false;
-    const newFiles = allowMultiple ? [...selectedFiles, ...fileArray] : fileArray;
-    
-    setSelectedFiles(newFiles);
-    
-    // Create new FileList-like object
-    const dataTransfer = new DataTransfer();
-    newFiles.forEach(file => dataTransfer.items.add(file));
-    onChange(dataTransfer.files);
-    
-    // Clear error
-    if (error) {
-      setError('');
+    if (fileArray.length > maxFiles) {
+      setError(`Maximum ${maxFiles} files allowed`);
+      return;
     }
-  };
 
-  const handleFileRemove = (index: number) => {
-    const newFiles = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(newFiles);
-    
-    const dataTransfer = new DataTransfer();
-    newFiles.forEach(file => dataTransfer.items.add(file));
-    onChange(dataTransfer.files.length > 0 ? dataTransfer.files : null);
+    // Validate file types and sizes
+    for (const file of fileArray) {
+      if (file.size > maxSize) {
+        setError(`File "${file.name}" is too large. Maximum size is ${Math.round(maxSize / (1024 * 1024))}MB`);
+        return;
+      }
+
+      if (acceptedTypes.length > 0) {
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        const mimeType = file.type;
+        
+        const isValidType = acceptedTypes.some((type: string) => {
+          if (type.startsWith('.')) {
+            return type.toLowerCase() === `.${fileExtension}`;
+          }
+          return mimeType.includes(type);
+        });
+
+        if (!isValidType) {
+          setError(`File type "${fileExtension}" is not allowed`);
+          return;
+        }
+      }
+    }
+
+    setError(null);
+    onChange(allowMultiple ? fileArray : fileArray[0]);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(true);
+    setDragOver(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
+    setDragOver(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
+    setDragOver(false);
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const handleClick = () => {
-    fileInputRef.current?.click();
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileSelect(e.target.files);
   };
 
-  const handleBlur = () => {
-    // Validate on blur
-    if (element.required && selectedFiles.length === 0) {
-      setError(`${element.label} is required`);
+  const handleFileRemove = (index: number) => {
+    if (Array.isArray(value)) {
+      const newFiles = value.filter((_, i) => i !== index);
+      onChange(newFiles.length > 0 ? newFiles : null);
+    } else {
+      onChange(null);
     }
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    // Return appropriate icon based on file type
-    return <File className="w-4 h-4" />;
-  };
-
-  const containerClasses = `
-    relative w-full
-    ${isPreview ? 'mb-4' : 'p-4 bg-white border border-gray-200 rounded-lg'}
-  `;
-
-  const dropZoneClasses = `
-    border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 cursor-pointer
-    ${isDragOver 
-      ? 'border-primary-400 bg-primary-50' 
-      : error 
-      ? 'border-red-300 bg-red-50 hover:border-red-400' 
-      : 'border-gray-300 bg-gray-50 hover:border-gray-400'
-    }
-  `;
-
-  const labelClasses = `
-    block text-sm font-medium mb-3 transition-colors duration-200
-    ${error ? 'text-red-700' : 'text-gray-700'}
-    ${element.required ? "after:content-['*'] after:text-red-500 after:ml-1" : ''}
-  `;
-
-  const allowedTypes = element.properties?.allowedTypes as string[] || [];
-  const maxSize = element.properties?.maxSize as number || 10 * 1024 * 1024;
-  const allowMultiple = element.properties?.allowMultiple as boolean || false;
-
   return (
-    <div className={containerClasses}>
-      {!isPreview && (
-        <div className="absolute -top-2 -left-2 bg-primary-500 text-white text-xs px-2 py-1 rounded shadow-sm">
-          FILE
-        </div>
-      )}
-      
+    <div className="w-full">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {element.label}
+        {element.required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+
       <div className="space-y-3">
-        <label className={labelClasses}>
-          {element.label}
-        </label>
-        
+        {/* Upload Area */}
         <div
-          className={dropZoneClasses}
+          className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+            dragOver
+              ? 'border-blue-400 bg-blue-50'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={handleClick}
-          onBlur={handleBlur}
-          style={{
-            width: isPreview ? '100%' : `${element.size.width}px`,
-            minHeight: `${element.size.height}px`,
-          }}
         >
           <input
-            ref={fileInputRef}
             type="file"
-            onChange={(e) => handleFileSelect(e.target.files)}
-            className="hidden"
-            multiple={allowMultiple}
-            accept={allowedTypes.join(',')}
-            required={element.required}
+            accept={element.properties?.acceptedFileTypes?.join(',') || '*'}
+            multiple={element.properties?.allowMultiple}
+            onChange={handleFileInputChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={!isPreview}
           />
           
-          <Upload className={`w-8 h-8 mx-auto mb-3 ${isDragOver ? 'text-primary-600' : 'text-gray-400'}`} />
-          
-          <div className="space-y-1">
-            <p className={`text-sm font-medium ${isDragOver ? 'text-primary-600' : 'text-gray-700'}`}>
-              {isDragOver ? 'Drop files here' : 'Click to upload or drag and drop'}
+          <div className="flex flex-col items-center">
+            <Upload className="w-8 h-8 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-600">
+              {dragOver ? 'Drop files here' : 'Click to upload or drag and drop'}
             </p>
-            <p className="text-xs text-gray-500">
-              {allowedTypes.length > 0 && `Supported: ${allowedTypes.join(', ')} • `}
-              Max size: {formatFileSize(maxSize)}
-              {allowMultiple && ' • Multiple files allowed'}
+            <p className="text-xs text-gray-500 mt-1">
+              {element.properties?.acceptedFileTypes?.length > 0
+                ? `Accepted: ${element.properties.acceptedFileTypes.join(', ')}`
+                : 'All file types accepted'}
             </p>
+            {element.properties?.maxSize && (
+              <p className="text-xs text-gray-500">
+                Max size: {Math.round(element.properties.maxSize / (1024 * 1024))}MB
+              </p>
+            )}
           </div>
         </div>
-        
-        {/* Selected Files List */}
-        {selectedFiles.length > 0 && (
+
+        {/* File List */}
+        {value && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">Selected Files:</h4>
-            <div className="space-y-1">
-              {selectedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {getFileIcon(file.name)}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(file.size)}
-                      </p>
+            {Array.isArray(value) ? (
+              value.map((file: File, index: number) => (
+                <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                     </div>
                   </div>
-                  
                   <div className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-green-500" />
                     <button
@@ -221,8 +177,28 @@ export function FileUpload({ element, onChange, isPreview = false, value = null 
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Check className="w-4 h-4 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{value.name}</p>
+                    <p className="text-xs text-gray-500">{formatFileSize(value.size)}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange(null);
+                  }}
+                  className="p-1 text-gray-400 hover:text-red-500 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         )}
         
@@ -237,4 +213,4 @@ export function FileUpload({ element, onChange, isPreview = false, value = null 
       </div>
     </div>
   );
-}
+};

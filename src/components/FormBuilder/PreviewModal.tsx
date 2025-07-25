@@ -12,8 +12,6 @@ import {
 } from 'lucide-react';
 import { PreviewModalProps, PreviewState } from '@/lib/types';
 import { FormRenderer } from '../FormElements/FormRenderer';
-// import { PreviewModalProps, PreviewState, FormElement } from '../types';
-// import { FormRenderer } from './FormRenderer';
 
 export const PreviewModal: React.FC<PreviewModalProps> = ({
   form,
@@ -141,7 +139,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       
       alert(`Form submitted successfully!\n\nData: ${JSON.stringify(previewState.formData, null, 2)}`);
       onClose();
-    } catch (error) {
+    } catch {
       alert('Form submission failed. Please try again.');
     } finally {
       setPreviewState(prev => ({ ...prev, isSubmitting: false }));

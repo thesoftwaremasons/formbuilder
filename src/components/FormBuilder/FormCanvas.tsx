@@ -19,7 +19,6 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showGrid, setShowGrid] = useState(false);
   const [zoom, setZoom] = useState(100);
-  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     // Only deselect if clicking directly on canvas (not on elements)
@@ -50,8 +49,8 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   const canvasStyle = {
     transform: `scale(${zoom / 100})`,
     transformOrigin: 'top left',
-    width: `${canvasSize.width}px`,
-    height: `${canvasSize.height}px`,
+    width: `${CANVAS_CONFIG.minWidth}px`,
+    height: `${CANVAS_CONFIG.minHeight}px`,
     minWidth: `${CANVAS_CONFIG.minWidth}px`,
     minHeight: `${CANVAS_CONFIG.minHeight}px`,
     backgroundColor: CANVAS_CONFIG.backgroundColor,
@@ -188,7 +187,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
             {/* Canvas Info */}
             <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm border border-gray-200">
               <div className="text-xs text-gray-600">
-                <div>Canvas: {canvasSize.width} × {canvasSize.height}px</div>
+                <div>Canvas: {CANVAS_CONFIG.minWidth} × {CANVAS_CONFIG.minHeight}px</div>
                 <div>Zoom: {zoom}% • Grid: {showGrid ? 'On' : 'Off'}</div>
               </div>
             </div>
@@ -208,7 +207,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
         </div>
         
         <div className="flex items-center gap-4">
-          <span>Canvas Size: {canvasSize.width} × {canvasSize.height}</span>
+          <span>Canvas Size: {CANVAS_CONFIG.minWidth} × {CANVAS_CONFIG.minHeight}</span>
           <span>Zoom: {zoom}%</span>
         </div>
       </div>

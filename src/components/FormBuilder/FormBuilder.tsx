@@ -20,13 +20,6 @@ import { PageManager } from './PageManager';
 import { PreviewModal } from './PreviewModal';
 import { PropertiesPanel } from './PropertiesPanel';
 import { WorkflowPanel } from './WorkflowPanel';
-// import { ComponentPalette } from './components/ComponentPalette';
-// import { FormCanvas } from './components/FormCanvas';
-// import { PropertiesPanel } from './components/PropertiesPanel';
-// import { PreviewModal } from './components/PreviewModal';
-// import { PageManager } from './components/PageManager';
-// import { WorkflowPanel } from './components/WorkflowPanel';
-// import { createFormElement, cloneFormElement, exportFormElements } from './utils';
 
   const createDefaultForm = (): Form => ({
     id: `form_${Date.now()}`,

@@ -4,9 +4,6 @@ import { Move, Trash2, Copy } from 'lucide-react';
 import { SELECTION_BORDER_WIDTH, SELECTION_BORDER_COLOR, RESIZE_HANDLE_SIZE } from '@/lib/constants';
 import { FormElement, DragState } from '@/lib/types';
 import { snapToGrid, constrainPosition, constrainSize } from '@/lib/utils';
-// import { FormElement, Position, Size, DragState } from '../types';
-// import { constrainSize, constrainPosition, snapToGrid } from '../utils';
-// import { RESIZE_HANDLE_SIZE, SELECTION_BORDER_COLOR, SELECTION_BORDER_WIDTH } from '../constants';
 
 interface ResizableFormElementProps {
   element: FormElement;

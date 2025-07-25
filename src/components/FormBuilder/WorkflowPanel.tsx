@@ -4,7 +4,6 @@ import {
   Plus,
   Trash2,
   Edit3,
-  Move,
   ArrowRight,
   Zap,
   Mail,
@@ -14,12 +13,13 @@ import {
   Settings,
   Play,
   Pause,
+  TestTube,
   CheckCircle,
   AlertCircle,
-  Clock
+  Loader2
 } from 'lucide-react';
 import { WorkflowPanelProps, WorkflowStep, WorkflowConfig } from '@/lib/types';
-
+import { WorkflowService } from '@/lib/workflow-service';
 
 export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({
   form,
@@ -27,6 +27,11 @@ export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({
 }) => {
   const [showAddWorkflow, setShowAddWorkflow] = useState(false);
   const [editingStep, setEditingStep] = useState<string | null>(null);
+  const [testingWorkflow, setTestingWorkflow] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [showTestResult, setShowTestResult] = useState(false);
+
+  const workflowService = WorkflowService.getInstance();
 
   const workflowTypes = [
     {
@@ -394,6 +399,48 @@ export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({
     );
   };
 
+  // Test workflow functionality
+  const testWorkflow = async () => {
+    if (form.workflow.length === 0) {
+      alert('No workflow steps to test');
+      return;
+    }
+
+    setTestingWorkflow(true);
+    setTestResult(null);
+
+    try {
+      // Validate workflow first
+      const validation = workflowService.validateWorkflow(form.workflow);
+      if (!validation.valid) {
+        setTestResult({
+          success: false,
+          errors: validation.errors,
+          logs: []
+        });
+        setShowTestResult(true);
+        return;
+      }
+
+      // Generate sample data
+      const sampleData = workflowService.generateSampleFormData(form);
+      
+      // Test workflow
+      const result = await workflowService.testWorkflow(form.workflow, sampleData, form);
+      setTestResult(result);
+      setShowTestResult(true);
+    } catch (error) {
+      setTestResult({
+        success: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        logs: []
+      });
+      setShowTestResult(true);
+    } finally {
+      setTestingWorkflow(false);
+    }
+  };
+
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
@@ -407,13 +454,29 @@ export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({
             Automate actions when forms are submitted
           </p>
         </div>
-        <button
-          onClick={() => setShowAddWorkflow(true)}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Step
-        </button>
+        <div className="flex items-center gap-2">
+          {form.workflow.length > 0 && (
+            <button
+              onClick={testWorkflow}
+              disabled={testingWorkflow}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              {testingWorkflow ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <TestTube className="w-4 h-4" />
+              )}
+              Test Workflow
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddWorkflow(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Step
+          </button>
+        </div>
       </div>
 
       {/* Workflow Steps */}
@@ -543,6 +606,117 @@ export const WorkflowPanel: React.FC<WorkflowPanelProps> = ({
                   className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Test Workflow */}
+      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <h4 className="text-sm font-medium text-gray-900 mb-2">Test Workflow:</h4>
+        <button
+          onClick={testWorkflow}
+          className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+        >
+          {testingWorkflow ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <CheckCircle className="w-4 h-4" />
+          )}
+          {testingWorkflow ? 'Testing...' : 'Test Workflow'}
+        </button>
+
+        {/* Test Result */}
+        {showTestResult && (
+          <div className="mt-4 p-3 bg-white border rounded-lg shadow-sm">
+            <h5 className="font-medium text-gray-900 mb-2">Test Result:</h5>
+            {testResult?.success ? (
+              <p className="text-sm text-green-600">{testResult.message}</p>
+            ) : (
+              <p className="text-sm text-red-600">{testResult?.message || 'Unknown error'}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Test Result Modal */}
+      {showTestResult && testResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  {testResult.success ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                  )}
+                  Workflow Test Results
+                </h3>
+                <button
+                  onClick={() => setShowTestResult(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                  <h4 className={`font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                    {testResult.success ? 'Workflow executed successfully!' : 'Workflow execution failed'}
+                  </h4>
+                  {testResult.redirectUrl && (
+                    <p className="text-sm text-green-700 mt-1">
+                      Would redirect to: {testResult.redirectUrl}
+                    </p>
+                  )}
+                </div>
+
+                {testResult.errors.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="font-medium text-red-800 mb-2">Errors:</h4>
+                    <ul className="text-sm text-red-700 space-y-1">
+                      {testResult.errors.map((error: string, index: number) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="text-red-500">•</span>
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {testResult.logs.length > 0 && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-800 mb-2">Execution Log:</h4>
+                    <div className="text-sm text-gray-700 space-y-1 font-mono">
+                      {testResult.logs.map((log: string, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <span className="text-gray-400 text-xs">{index + 1}.</span>
+                          <span>{log}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowTestResult(false)}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={testWorkflow}
+                  disabled={testingWorkflow}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {testingWorkflow ? 'Testing...' : 'Test Again'}
                 </button>
               </div>
             </div>

@@ -28,7 +28,42 @@ export type FormElementType =
   | 'file'
   | 'heading'
   | 'paragraph'
-  | 'divider';
+  | 'divider'
+  | 'time'
+  | 'datetime'
+  | 'url'
+  | 'tel'
+  | 'password'
+  | 'color'
+  | 'range'
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'table'
+  | 'rating'
+  | 'signature'
+  | 'location'
+  | 'payment'
+  | 'multiselect'
+  | 'toggle'
+  | 'button'
+  | 'link'
+  | 'spacer'
+  | 'code'
+  | 'html'
+  | 'calculation'
+  | 'section'
+  | 'tabs'
+  | 'accordion'
+  | 'card'
+  | 'progress'
+  | 'matrix'
+  | 'ranking'
+  | 'likert'
+  | 'nps'
+  | 'embed'
+  | 'qr'
+  | 'chart';
 
 export interface ElementStyle {
   backgroundColor?: string;
@@ -212,7 +247,7 @@ export interface ComponentPaletteItem {
   type: FormElementType;
   label: string;
   icon: any;
-  category: 'input' | 'selection' | 'action' | 'advanced' | 'layout';
+  category: 'input' | 'selection' | 'action' | 'advanced' | 'layout' | 'media' | 'interactive' | 'display' | 'business';
   defaultProperties: Partial<FormElement>;
 }
 

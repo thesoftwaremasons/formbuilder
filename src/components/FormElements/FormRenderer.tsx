@@ -7,8 +7,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   formData,
   onDataChange,
   onSubmit,
-  validationErrors = {},
-  isPreview = false
+  validationErrors = {}
 }) => {
   const [localData, setLocalData] = useState<Record<string, any>>({});
 
@@ -266,70 +265,36 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
               {element.label}
               {element.required && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <div 
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                error ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
-              }`}
-              style={{ 
-                borderColor: error ? '#ef4444' : (element.style?.borderColor || '#d1d5db'),
-                backgroundColor: element.style?.backgroundColor || '#f9fafb'
-              }}
-            >
+            <div className="relative">
               <input
                 type="file"
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (files && files.length > 0) {
-                    const fileArray = Array.from(files).map(file => ({
-                      name: file.name,
-                      size: file.size,
-                      type: file.type
-                    }));
-                    handleFieldChange(element.id, element.properties?.allowMultiple ? fileArray : fileArray[0]);
-                  }
-                }}
+                accept={element.properties?.acceptedFileTypes?.join(',') || '*'}
                 multiple={element.properties?.allowMultiple}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  handleFieldChange(element.id, element.properties?.allowMultiple ? files : files[0]);
+                }}
                 required={element.required}
-                className="hidden"
-                id={`file-${element.id}`}
-                accept={element.properties?.allowedTypes?.join(',')}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
-              <label htmlFor={`file-${element.id}`} className="cursor-pointer">
-                <div className="text-gray-600">
-                  <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="text-sm">
-                    <span className="font-medium text-blue-600 hover:text-blue-500">
-                      Click to upload
-                    </span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {element.properties?.allowedTypes?.join(', ') || 'Any file type'} 
-                    {element.properties?.maxSize && ` • Max ${Math.round(element.properties.maxSize / 1024 / 1024)}MB`}
-                  </p>
-                </div>
-              </label>
               
               {value && (
-                <div className="mt-3 text-sm text-gray-600">
+                <div className="mt-2 space-y-2">
                   {Array.isArray(value) ? (
-                    <div className="space-y-1">
-                      {value.map((file: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between bg-white p-2 rounded">
-                          <span>{file.name || file}</span>
-                          <button
-                            onClick={() => {
-                              const newFiles = value.filter((_: any, i: number) => i !== index);
-                              handleFieldChange(element.id, newFiles.length ? newFiles : null);
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    value.map((file: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span className="text-sm text-gray-700">{file.name || file}</span>
+                        <button
+                          onClick={() => {
+                            const newFiles = value.filter((_: any, i: number) => i !== index);
+                            handleFieldChange(element.id, newFiles.length ? newFiles : null);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
                   ) : (
                     <div className="flex items-center justify-between bg-white p-2 rounded">
                       <span>{value.name || value}</span>
@@ -351,6 +316,337 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                 </svg>
                 {error}
               </p>
+            )}
+          </div>
+        );
+
+      case 'rating':
+        return (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {element.label}
+              {element.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((rating) => (
+                <button
+                  key={rating}
+                  type="button"
+                  onClick={() => handleFieldChange(element.id, rating)}
+                  className={`w-8 h-8 rounded-full ${
+                    (value >= rating) ? 'text-yellow-400' : 'text-gray-300'
+                  } hover:text-yellow-400 transition-colors`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            {error && (
+              <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'signature':
+        return (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {element.label}
+              {element.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
+              <div className="h-32 flex items-center justify-center text-gray-500">
+                <span>Click to sign</span>
+              </div>
+            </div>
+            {error && (
+              <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'range':
+        return (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {element.label}
+              {element.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="space-y-2">
+              <input
+                type="range"
+                min={element.properties?.min || 0}
+                max={element.properties?.max || 100}
+                step={element.properties?.step || 1}
+                value={value || (element.properties?.min || 0)}
+                onChange={(e) => handleFieldChange(element.id, parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>{element.properties?.min || 0}</span>
+                <span className="font-medium">{value || (element.properties?.min || 0)}</span>
+                <span>{element.properties?.max || 100}</span>
+              </div>
+            </div>
+            {error && (
+              <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'progress':
+        return (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {element.label}
+            </label>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${value || 0}%` }}
+              />
+            </div>
+            <div className="text-sm text-gray-500 mt-1">
+              {value || 0}% complete
+            </div>
+          </div>
+        );
+
+      case 'matrix':
+        return (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {element.label}
+              {element.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-300">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2 text-left border-b"></th>
+                    {element.properties?.columns?.map((column: string, index: number) => (
+                      <th key={index} className="px-4 py-2 text-center border-b border-l">
+                        {column}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {element.properties?.rows?.map((row: string, rowIndex: number) => (
+                    <tr key={rowIndex}>
+                      <td className="px-4 py-2 border-b font-medium">{row}</td>
+                      {element.properties?.columns?.map((column: string, colIndex: number) => (
+                        <td key={colIndex} className="px-4 py-2 text-center border-b border-l">
+                          <input
+                            type="radio"
+                            name={`${element.id}_${rowIndex}`}
+                            value={colIndex}
+                            checked={value?.[rowIndex] === colIndex}
+                            onChange={(e) => {
+                              const newValue = { ...value };
+                              newValue[rowIndex] = parseInt(e.target.value);
+                              handleFieldChange(element.id, newValue);
+                            }}
+                            className="w-4 h-4 text-blue-600"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {error && (
+              <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'likert':
+        return (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {element.label}
+              {element.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="space-y-3">
+              {element.properties?.statements?.map((statement: string, index: number) => (
+                <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-gray-700 mb-2">{statement}</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{element.properties?.leftLabel || 'Strongly Disagree'}</span>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => {
+                            const newValue = { ...value };
+                            newValue[index] = rating;
+                            handleFieldChange(element.id, newValue);
+                          }}
+                          className={`w-8 h-8 rounded-full border-2 ${
+                            value?.[index] === rating
+                              ? 'bg-blue-500 border-blue-500 text-white'
+                              : 'border-gray-300 hover:border-blue-300'
+                          } transition-colors`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-500">{element.properties?.rightLabel || 'Strongly Agree'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {error && (
+              <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'nps':
+        return (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {element.label}
+              {element.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">Not likely at all</span>
+                <span className="text-sm text-gray-500">Extremely likely</span>
+              </div>
+              <div className="flex justify-between">
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                  <button
+                    key={score}
+                    type="button"
+                    onClick={() => handleFieldChange(element.id, score)}
+                    className={`w-8 h-8 rounded-full border-2 text-sm font-medium ${
+                      value === score
+                        ? 'bg-blue-500 border-blue-500 text-white'
+                        : 'border-gray-300 hover:border-blue-300'
+                    } transition-colors`}
+                  >
+                    {score}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {error && (
+              <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'divider':
+        return (
+          <div className="mb-4">
+            <hr className="border-gray-300" style={{ 
+              borderColor: element.style?.borderColor || '#d1d5db',
+              borderWidth: `${element.style?.borderWidth || 1}px 0 0 0`
+            }} />
+          </div>
+        );
+
+      case 'spacer':
+        return (
+          <div 
+            className="mb-4" 
+            style={{ 
+              height: `${element.size.height}px`,
+              backgroundColor: element.style?.backgroundColor || 'transparent'
+            }}
+          />
+        );
+
+      case 'heading':
+        const HeadingTag = element.properties?.level === 'h1' ? 'h1' : 
+                          element.properties?.level === 'h2' ? 'h2' : 
+                          element.properties?.level === 'h3' ? 'h3' : 'h2';
+        
+        return (
+          <div className="mb-4">
+            <HeadingTag 
+              className={`font-bold ${
+                element.properties?.level === 'h1' ? 'text-3xl' :
+                element.properties?.level === 'h2' ? 'text-2xl' :
+                element.properties?.level === 'h3' ? 'text-xl' : 'text-2xl'
+              }`}
+              style={{ 
+                color: element.style?.textColor || '#1f2937',
+                textAlign: element.style?.textAlign || 'left'
+              }}
+            >
+              {element.label}
+            </HeadingTag>
+          </div>
+        );
+
+      case 'paragraph':
+        return (
+          <div className="mb-4">
+            <p 
+              className="text-gray-700 leading-relaxed"
+              style={{ 
+                color: element.style?.textColor || '#374151',
+                textAlign: element.style?.textAlign || 'left',
+                fontSize: `${element.style?.fontSize || 14}px`
+              }}
+            >
+              {element.properties?.content || element.label}
+            </p>
+          </div>
+        );
+
+      case 'image':
+        return (
+          <div className="mb-4">
+            {element.properties?.src ? (
+              <img 
+                src={element.properties.src} 
+                alt={element.properties?.alt || element.label}
+                className="max-w-full h-auto rounded-lg"
+                style={{
+                  borderRadius: `${element.style?.borderRadius || 8}px`
+                }}
+              />
+            ) : (
+              <div className="w-full h-32 bg-gray-200 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
+                No image selected
+              </div>
             )}
           </div>
         );
